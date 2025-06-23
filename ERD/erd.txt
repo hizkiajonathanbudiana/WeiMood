@@ -1,0 +1,67 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Table Profiles {
+  id integer [primary key]
+  displayName varchar
+  age varchar
+  country varchar
+  city varchar
+  personality varchar
+  hobbies varchar
+  interests varchar
+  favMusic varchar
+  favGenreMusic varchar
+  activityLevel varchar
+  status varchar
+  field varchar
+
+  UserId integer
+
+  updatedAt timestamp
+  createdAt timestamp
+}
+
+Table Users {
+  id integer [primary key]
+  email varchar [unique]
+  password varchar
+  googleSub varchar [unique]  
+  provider varchar
+  updatedAt timestamp
+  createdAt timestamp
+}
+
+Table MoodLogs {
+  id integer [primary key]
+  happy integer
+  sad integer
+  overwhelmed integer
+  fear integer
+  calm integer
+  bored integer
+  excited integer
+  lonely integer
+  UserId integer [not null]
+  updatedAt timestamp
+  createdAt timestamp
+
+  Indexes {
+    (UserId, createdAt) [unique]
+  }
+}
+
+Table SaveChats {
+  id integer [primary key]
+  text varchar
+  UserId integer [not null]
+  updatedAt timestamp
+  createdAt timestamp
+
+ 
+}
+
+
+Ref:Users.id - Profiles.UserId
+Ref:Users.id < SaveChats.UserId
+Ref:Users.id < MoodLogs.UserId
