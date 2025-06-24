@@ -5,17 +5,29 @@ if (process.env.NODE_ENV !== "production") {
 const express = require("express");
 const app = express();
 const port = process.env.PORT || 3000;
-
+const routers = require("./routers/routers.js");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 
-dotenv.config();
-app.use(cors());
+app.use(cookieParser());
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use(routers);
+
 app.use((error, req, res, next) => {
-  console.error(error.stack);
-  res.status(500).send("Something broke!");
+  console.error(error);
+  const status = error.status || 500;
+  const message = error.message || "Something broke!";
+  res.status(status).send({ message });
 });
 
 app.listen(port, () => {

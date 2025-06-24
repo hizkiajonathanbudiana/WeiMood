@@ -4,36 +4,52 @@ const { generateToken } = require("../helpers/jwt");
 const { OAuth2Client } = require("google-auth-library");
 
 class userController {
-  async googleLogin(req, res) {
+  static async googleLogin(req, res) {
+    console.log("REQUEST BODY DITERIMA DI BACKEND:", req.body);
     try {
       const { token } = req.body;
       if (!token) {
         return res.status(400).json({ message: "Token is required" });
       }
-
       const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
       const ticket = await client.verifyIdToken({
         idToken: token,
         audience: process.env.GOOGLE_CLIENT_ID,
       });
-
       const payload = ticket.getPayload();
       const email = payload.email;
+      const googleSub = payload.sub;
 
       let user = await User.findOne({ where: { email } });
       if (!user) {
-        user = await User.create({ email, password: null }); // Password is not used for Google login
+        user = await User.create({
+          email,
+          googleSub,
+          provider: "google",
+          password: null,
+        });
+      } else if (!user.googleSub) {
+        user.googleSub = googleSub;
+        user.provider = "google";
+        await user.save();
       }
+      const jwtToken = generateToken({ id: user.id });
 
-      const jwtToken = generateToken(user);
-      res.json({ token: jwtToken, user });
+      res.cookie("accessToken", jwtToken, {
+        httpOnly: true,
+        secure: false,
+        sameSite: "Strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      res.json({ token: jwtToken, access_token: jwtToken });
     } catch (error) {
       console.error("Error logging in with Google:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   }
 
-  async registerHandler(req, res) {
+  static async registerHandler(req, res) {
     try {
       const { email, password } = req.body;
       if (!email || !password) {
@@ -54,7 +70,7 @@ class userController {
     }
   }
 
-  async loginHandler(req, res) {
+  static async loginHandler(req, res) {
     try {
       const { email, password } = req.body;
       if (!email || !password) {
@@ -70,28 +86,23 @@ class userController {
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
+      const jwtToken = generateToken({ id: user.id });
 
-      const token = generateToken(user.id);
-      // Set the token in a secure HTTP-only cookie
-      res.cookie("accessToken", token, {
+      res.cookie("accessToken", jwtToken, {
         httpOnly: true,
-        secure: true, // aktifin kalau HTTPS
-        sameSite: "Strict", // biar gak keambil di request luar
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 1 minggu
+        secure: false,
+        sameSite: "Strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
-      res.json({
-        message: "Login successful",
-        access_token: token,
-        user_id: user.id,
-      });
+      res.json({ token: jwtToken, access_token: jwtToken });
     } catch (error) {
       console.error("Error logging in user:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   }
 
-  async updateUser(req, res) {
+  static async updateUser(req, res) {
     try {
       const userId = req.params.id;
       const updatedData = req.body;

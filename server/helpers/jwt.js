@@ -1,9 +1,9 @@
 const jwt = require("jsonwebtoken");
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
 
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET is not defined in environment variables");
+if (!JWT_ACCESS_SECRET) {
+  throw new Error("JWT_ACCESS_SECRET is not defined in environment variables");
 }
 function generateToken(user) {
   const payload = {
